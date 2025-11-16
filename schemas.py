@@ -1,48 +1,72 @@
 """
-Database Schemas
+Database Schemas for The Time-Traveler Codex
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model maps to a MongoDB collection (lowercased class name).
+These schemas are used for validation and by the Flames database viewer.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, HttpUrl
+from typing import List, Optional, Literal
 
-# Example schemas (replace with your own):
+class Era(BaseModel):
+    key: str = Field(..., description="Unique slug-like identifier, e.g., 'ancient'")
+    name: str = Field(..., description="Display name of the era")
+    theme: Literal["ancient","medieval","industrial","cyber","cosmic","custom"] = Field("custom")
+    description: Optional[str] = Field(None, description="Short description for the era")
+    colors: Optional[dict] = Field(default=None, description="Optional color tokens for UI theming")
+    background_media: Optional[str] = Field(default=None, description="Image/Video URL for background")
 
+class ProjectMedia(BaseModel):
+    image: Optional[str] = None
+    video: Optional[str] = None
+    model: Optional[str] = None
+
+class Project(BaseModel):
+    title: str
+    era_key: str = Field(..., description="Which era this project belongs to (matches Era.key)")
+    subtitle: Optional[str] = None
+    description: Optional[str] = None
+    problem: Optional[str] = None
+    solution: Optional[str] = None
+    result: Optional[str] = None
+    tech_stack: List[str] = Field(default_factory=list)
+    github: Optional[HttpUrl] = None
+    live_url: Optional[HttpUrl] = None
+    media: Optional[ProjectMedia] = None
+    showcase_data: Optional[dict] = None
+
+class Skill(BaseModel):
+    name: str
+    level: int = Field(75, ge=0, le=100)
+    category: str = Field("General")
+    icon: Optional[str] = Field(None, description="Lucide icon name or URL")
+
+class Achievement(BaseModel):
+    title: str
+    description: Optional[str] = None
+    year: Optional[int] = None
+    certificate_url: Optional[HttpUrl] = None
+    capsule: Literal["pulse","orbit","glow","spark"] = Field("glow")
+
+class Profile(BaseModel):
+    name: str
+    role: str
+    photo_url: Optional[str] = None
+    bio: Optional[str] = None
+    timeline: List[dict] = Field(default_factory=list, description="List of {year, title, text}")
+    links: List[dict] = Field(default_factory=list, description="List of {label, url}")
+
+# Example schemas kept for reference (not used by Codex)
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: str
+    email: str
+    address: str
+    age: Optional[int] = None
+    is_active: bool = True
 
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+    title: str
+    description: Optional[str] = None
+    price: float
+    category: str
+    in_stock: bool = True
